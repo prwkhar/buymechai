@@ -1,14 +1,64 @@
 "use client";
-import React from "react";
+import { useEffect,useState } from "react";
+import Link from "next/link";
+import { useSession, signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 const Login = () => {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loggingIn, setLoggingIn] = useState(false); // Track login flow
+
+  useEffect(() => {
+    if (loggingIn && status === "authenticated" && session) {
+      console.log("Redirecting to:", session.user.name);
+      router.push(`/${session.user.name}`);
+    }
+  }, [session, status, loggingIn]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const res = await signIn("credentials", {
+      redirect: false,
+      email,
+      password,
+    });
+
+    if (res?.ok) {
+      alert("🎉 Login successful!");
+      setLoggingIn(true); // trigger useEffect when session updates
+    } else {
+      alert(res?.error || "Login failed.");
+    }
+  };
+
+  if (session) {
+    return (
+      <div className="flex justify-center pt-25">
+        <div className="w-full max-w-md flex flex-col bg-white dark:bg-gray-800 shadow-lg rounded-xl p-8 space-y-6">
+          <h1 className="text-3xl font-bold text-center text-gray-900 dark:text-gray-100">
+            Already Logged In
+          </h1>
+          <button
+            onClick={() => signOut()}
+            className="w-full py-2 px-4 bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white font-semibold rounded-md shadow focus:outline-none focus:ring-2 focus:ring-red-500"
+          >
+            Log Out
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex justify-center pt-25">
       <div className="w-full max-w-md flex flex-col bg-white dark:bg-gray-800 shadow-lg rounded-xl p-8 space-y-6">
         <h1 className="text-3xl font-bold text-center text-gray-900 dark:text-gray-100">
           Log In
         </h1>
-        <form action="#" method="post" className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div>
             <label
               htmlFor="email"
@@ -20,6 +70,8 @@ const Login = () => {
               type="email"
               id="email"
               placeholder="Your email address"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               required
               className="mt-1 block w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100"
             />
@@ -35,6 +87,8 @@ const Login = () => {
               type="password"
               id="password"
               placeholder="Your password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               required
               className="mt-1 block w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100"
             />
@@ -55,10 +109,10 @@ const Login = () => {
           </button>
         </form>
         <div className="text-center text-sm text-gray-500 dark:text-gray-400">
-          Don't have an account?{" "}
-          <a href="#" className="text-blue-500 hover:underline dark:text-blue-400">
+          Don't have an account?{' '}
+          <Link href="/signin" className="text-blue-500 hover:underline dark:text-blue-400">
             Sign up
-          </a>
+          </Link>
         </div>
         <div>
           <p className="text-center text-sm text-gray-500 dark:text-gray-400">
@@ -71,29 +125,14 @@ const Login = () => {
                 alt: "Google",
               },
               {
-                src: "https://ucarecdn.com/95eebb9c-85cf-4d12-942f-3c40d7044dc6/",
-                alt: "Linkedin",
-              },
-              {
                 src: "https://ucarecdn.com/be5b0ffd-85e8-4639-83a6-5162dfa15a16/",
                 alt: "Github",
-              },
-              {
-                src: "https://ucarecdn.com/6f56c0f1-c9c0-4d72-b44d-51a79ff38ea9/",
-                alt: "Facebook",
-              },
-              {
-                src: "https://ucarecdn.com/82d7ca0a-c380-44c4-ba24-658723e2ab07/",
-                alt: "Twitter",
-              },
-              {
-                src: "https://ucarecdn.com/3277d952-8e21-4aad-a2b7-d484dad531fb/",
-                alt: "Apple",
               },
             ].map((social, index) => (
               <button
                 key={index}
                 className="p-2 bg-gray-100 dark:bg-gray-700 rounded-full hover:scale-105 transition-transform"
+                onClick={() => signIn(social.alt.toLowerCase())}
               >
                 <img
                   className="w-6 h-6"
@@ -105,7 +144,7 @@ const Login = () => {
           </div>
         </div>
       </div>
-      </div>
+    </div>
   );
 };
 
